@@ -87,16 +87,20 @@ class RecyclerUsersAdapter(val context: Context) :
         } else {
             "${opponent.uid}-${currnentUser.uid}"
         }
-        var myUid = FirebaseAuth.getInstance().uid//내 Uid
-        database.child("chatRooms").child(chatRoomKey).orderByChild("users/${opponent.uid}").equalTo(true)       //상대방의 Uid가 포함된 채팅방이 있는 지 확인
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onCancelled(error: DatabaseError) {}
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (snapshot.value == null) {
-                        database.child("chatRooms").child(chatRoomKey).setValue(chatRoom)   //채팅방이 있는 경우
-                        context.startActivity(Intent(context, MainActivity::class.java))
-                        goToChatRoom(chatRoom, opponent,chatRoomKey)
-                    } else {                                                                         //채팅방이 없는경우
+        var myUid = FirebaseAuth.getInstance().uid!!//내 Uid
+        database.child("chatRooms").child(chatRoomKey).child("users").child(myUid).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onCancelled(error: DatabaseError) {
+                // 처리 중 오류가 발생한 경우
+            }
+
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val isUserInChatRoom = snapshot.getValue(Boolean::class.java)
+                if (isUserInChatRoom == true) {
+                    // 사용자가 해당 채팅방에 있는 경우, 해당 채팅방으로 이동
+                    val intent = Intent(context, ChatRoomActivity::class.java)
+                    intent.putExtra("ChatRoomKey", chatRoomKey)
+                    context.startActivity(intent)
+                } else {                                                                         //채팅방이 없는경우
                         database.child("chatRooms").child(chatRoomKey).setValue(chatRoom)
                             .addOnSuccessListener {// 채팅방 새로 생성 후 이동
                                 goToChatRoom(chatRoom, opponent,chatRoomKey)
